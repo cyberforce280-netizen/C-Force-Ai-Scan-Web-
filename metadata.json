@@ -1,0 +1,7 @@
+{
+  "name": "C-Force AI Scan Web",
+  "description": "A comprehensive AI-powered Threat Intelligence and OSINT platform featuring global monitoring, vulnerability scanning, and an integrated Gemini AI security analyst.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
