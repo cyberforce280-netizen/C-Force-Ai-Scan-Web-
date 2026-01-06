@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Shield, Search, Zap, Globe, AlertTriangle, 
@@ -5,7 +6,7 @@ import {
   AlertOctagon, Info, CheckCircle, Database,
   Terminal, ChevronRight, X, Radar
 } from 'lucide-react';
-import { quickAnalyze } from '../services/geminiService';
+import { generateThreatData } from '../services/geminiService';
 
 // --- Types ---
 
@@ -21,62 +22,8 @@ interface ThreatIndicator {
   lastSeen: string;
   sources: number;
   region: string;
+  aiAnalysis?: string;
 }
-
-// --- Mock Data ---
-
-const MOCK_FEED: ThreatIndicator[] = [
-  {
-    id: 'ioc-001',
-    type: 'IP',
-    value: '103.45.2.1',
-    riskLevel: 'CRITICAL',
-    confidence: 95,
-    classification: 'C2 Infrastructure',
-    campaign: 'Lazarus Group',
-    firstSeen: '2023-10-25',
-    lastSeen: '2m ago',
-    sources: 12,
-    region: 'APAC'
-  },
-  {
-    id: 'ioc-002',
-    type: 'HASH',
-    value: '7f8d9c...a1b2',
-    riskLevel: 'HIGH',
-    confidence: 88,
-    classification: 'Ransomware Payload',
-    campaign: 'LockBit 3.0',
-    firstSeen: '2023-10-27',
-    lastSeen: '15m ago',
-    sources: 8,
-    region: 'Global'
-  },
-  {
-    id: 'ioc-003',
-    type: 'DOMAIN',
-    value: 'update-win-sys.com',
-    riskLevel: 'MEDIUM',
-    confidence: 65,
-    classification: 'Phishing Landing',
-    firstSeen: '2023-10-26',
-    lastSeen: '1h ago',
-    sources: 4,
-    region: 'NA'
-  },
-  {
-    id: 'ioc-004',
-    type: 'IP',
-    value: '45.33.22.11',
-    riskLevel: 'LOW',
-    confidence: 30,
-    classification: 'Port Scanning',
-    firstSeen: '2023-10-20',
-    lastSeen: '4h ago',
-    sources: 2,
-    region: 'EU'
-  }
-];
 
 // --- Sub-Components ---
 
@@ -122,42 +69,35 @@ export const ThreatIntel: React.FC = () => {
   const [query, setQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [activeIoc, setActiveIoc] = useState<ThreatIndicator | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [history, setHistory] = useState<ThreatIndicator[]>([]);
 
   const handleAnalyze = async (inputVal: string = query) => {
     if (!inputVal) return;
     setIsAnalyzing(true);
-    setAiAnalysis(null);
+    setActiveIoc(null);
 
-    // Simulate analysis delay
-    setTimeout(async () => {
-      // Find mock or generate generic
-      const found = MOCK_FEED.find(m => m.value === inputVal) || {
-        id: 'gen-' + Date.now(),
-        type: inputVal.includes('.') ? 'DOMAIN' : 'HASH',
-        value: inputVal,
-        riskLevel: 'MEDIUM',
-        confidence: 60,
-        classification: 'Suspicious Artifact',
-        firstSeen: '2023-11-01',
-        lastSeen: 'Just now',
-        sources: 2,
-        region: 'Unknown'
-      } as ThreatIndicator;
-
-      setActiveIoc(found);
+    try {
+      // Fetch Real/Simulated Data from Gemini
+      const data = await generateThreatData(inputVal);
       
-      // Call Gemini for context
-      const analysis = await quickAnalyze(`Analyze risk for IOC: ${found.value} (${found.classification})`, 'risk');
-      setAiAnalysis(analysis);
-      
+      if (data) {
+        const newIoc: ThreatIndicator = {
+          id: Date.now().toString(),
+          value: inputVal,
+          ...data
+        };
+        setActiveIoc(newIoc);
+        setHistory(prev => [newIoc, ...prev]);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   const selectIoc = (ioc: ThreatIndicator) => {
-    setQuery(ioc.value);
-    handleAnalyze(ioc.value);
+    setActiveIoc(ioc);
   };
 
   return (
@@ -169,7 +109,7 @@ export const ThreatIntel: React.FC = () => {
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-3xl font-bold text-white font-orbitron tracking-wide">THREAT INTELLIGENCE</h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-amber-500/10 text-amber-500 border border-amber-500/20">
-              <Shield size={10} className="inline mr-1" /> Passive CTI · Defensive
+              <Shield size={10} className="inline mr-1" /> AI Powered CTI
             </span>
           </div>
           <p className="text-slate-400 font-rajdhani font-medium">Defensive analysis of global cyber threats and indicators.</p>
@@ -178,7 +118,7 @@ export const ThreatIntel: React.FC = () => {
           <div className="flex flex-col items-end">
              <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Threat Feed</span>
              <div className="flex items-center gap-2 text-cyan-400 text-sm font-bold bg-cyan-950/30 px-3 py-1 rounded border border-cyan-900/50">
-               <Activity size={14} /> LIVE STREAM ACTIVE
+               <Activity size={14} /> LIVE QUERY
              </div>
           </div>
         </div>
@@ -212,18 +152,17 @@ export const ThreatIntel: React.FC = () => {
               </button>
             </div>
             <div className="mt-2 text-[10px] text-slate-500 flex justify-between">
-               <span>Passive Analysis · Read-only</span>
-               <span>No Exploitation</span>
+               <span>Search Public Threat Data</span>
             </div>
           </div>
 
           {/* 3. IOC Feed */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
              <div className="p-3 bg-slate-900/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800 sticky top-0 backdrop-blur">
-                Recent Indicators (IOCs)
+                Recent Queries
              </div>
              <div className="divide-y divide-slate-800">
-               {MOCK_FEED.map((ioc) => (
+               {history.map((ioc) => (
                  <div 
                    key={ioc.id} 
                    onClick={() => selectIoc(ioc)}
@@ -238,7 +177,7 @@ export const ThreatIntel: React.FC = () => {
                        }`}>
                           {ioc.riskLevel}
                        </span>
-                       <span className="text-[10px] text-slate-500 font-mono">{ioc.lastSeen}</span>
+                       <span className="text-[10px] text-slate-500 font-mono">{ioc.type}</span>
                     </div>
                     <div className="font-mono text-sm text-slate-200 mb-1 truncate">{ioc.value}</div>
                     <div className="text-xs text-slate-500 flex justify-between items-center">
@@ -247,6 +186,9 @@ export const ThreatIntel: React.FC = () => {
                     </div>
                  </div>
                ))}
+               {history.length === 0 && (
+                 <div className="p-4 text-center text-xs text-slate-600">No queries yet.</div>
+               )}
              </div>
           </div>
         </div>
@@ -296,7 +238,7 @@ export const ThreatIntel: React.FC = () => {
                        <Zap size={12} className="text-amber-500" /> AI Risk Assessment
                     </div>
                     <p className="text-sm text-slate-300 leading-relaxed font-mono border-l-2 border-amber-500/30 pl-3">
-                       {aiAnalysis || <span className="animate-pulse">Analyzing intelligence context...</span>}
+                       {activeIoc.aiAnalysis || "Analysis pending..."}
                     </p>
                  </div>
               </div>
@@ -356,7 +298,7 @@ export const ThreatIntel: React.FC = () => {
                <Radar size={64} className="mb-4 opacity-20 animate-spin-slow" />
                <h3 className="text-xl font-orbitron text-slate-500">AWAITING TARGET</h3>
                <p className="text-sm max-w-md text-center mt-2">
-                  Select an indicator from the feed or enter a query to begin passive intelligence analysis.
+                  Enter an IP, Domain, or Hash to query the intelligence database.
                </p>
             </div>
           )}
@@ -367,7 +309,7 @@ export const ThreatIntel: React.FC = () => {
       {/* Legal Footer */}
       <div className="p-2 border-t border-slate-800 bg-[#05080F] text-center">
          <p className="text-[10px] text-slate-600 flex items-center justify-center gap-2">
-            <Info size={10} /> Threat intelligence is derived from publicly available sources and passive observation. No intrusion, exploitation, or unauthorized access is performed.
+            <Info size={10} /> Threat intelligence is derived from publicly available sources and AI knowledge. No intrusion, exploitation, or unauthorized access is performed.
          </p>
       </div>
 

@@ -35,7 +35,20 @@ export interface ChatMessage {
   isThinking?: boolean;
 }
 
-export type ViewState = 'DASHBOARD' | 'THREAT_INTEL' | 'OSINT' | 'NETWORK' | 'VULN_SCAN' | 'ADMIN_PANEL';
+/**
+ * User data for authentication and profile management
+ */
+export interface UserData {
+  username: string;
+  name: string;
+  role: string;
+  level: string;
+  hasFaceId?: boolean;
+  faceImage?: string;
+  lastLogin?: string | number;
+}
+
+export type ViewState = 'DASHBOARD' | 'THREAT_INTEL' | 'OSINT' | 'NETWORK' | 'VULN_SCAN' | 'DDOS' | 'ADMIN_PANEL';
 
 export enum OsintSubSection {
   DOMAIN = 'Domain & Infrastructure',

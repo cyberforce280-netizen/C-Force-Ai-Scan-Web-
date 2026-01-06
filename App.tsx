@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { ViewState } from './types';
-import { LayoutDashboard, Shield, Globe, Network, Scan, Bell, Menu, User, LogOut, Lock, Fingerprint, CheckCircle, Database, Hexagon } from 'lucide-react';
+import { LayoutDashboard, Shield, Globe, Network, Scan, Bell, Menu, User, LogOut, Lock, Fingerprint, CheckCircle, Database, Hexagon, RefreshCw, Zap } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { ThreatIntel } from './components/ThreatIntel';
 import { Osint } from './components/Osint';
 import { NetworkSec } from './components/NetworkSec';
 import { VulnScan } from './components/VulnScan';
+import { DDoSAttack } from './components/DDoSAttack';
 import { AiAssistant } from './components/AiAssistant';
-import { Login } from './components/Login';
 import { AdminPanel } from './components/AdminPanel';
 
 const NavItem = ({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) => (
@@ -102,18 +102,32 @@ const playWelcomeSound = () => {
 // --- Futuristic Logo Component ---
 const FuturisticLogo = () => (
   <div className="relative w-10 h-10 flex items-center justify-center group">
-    {/* Rotating Rings */}
-    <div className="absolute inset-0 border-2 border-red-600 rounded-full border-t-transparent border-l-transparent animate-[spin_3s_linear_infinite] shadow-[0_0_10px_#ef4444]"></div>
-    <div className="absolute inset-1 border border-cyan-500 rounded-full border-b-transparent border-r-transparent animate-[spin_2s_linear_infinite_reverse] opacity-70"></div>
+    {/* Amber Glow Background */}
+    <div className="absolute inset-0 bg-orange-600/20 rounded-full blur-md group-hover:blur-xl transition-all duration-500 opacity-50 group-hover:opacity-100"></div>
+
+    {/* Rotating Cyber Ring */}
+    <div className="absolute inset-[-2px] border-2 border-orange-500/30 rounded-full border-t-transparent border-r-transparent animate-[spin_3s_linear_infinite]"></div>
     
-    {/* Inner Core */}
-    <div className="absolute w-4 h-4 bg-white rounded-full animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.8)]"></div>
-    
-    {/* Hexagon Overlay */}
-    <Hexagon size={36} className="text-red-500/20 absolute stroke-[1px]" />
-    
-    {/* Glow Effect on Hover */}
-    <div className="absolute inset-0 bg-red-500/0 group-hover:bg-red-500/20 rounded-full transition-all duration-500 blur-xl"></div>
+    {/* Static Inner Ring */}
+    <div className="absolute inset-[2px] border border-orange-400/20 rounded-full"></div>
+
+    {/* Shield Icon */}
+    <div className="relative z-10 flex items-center justify-center">
+       <Shield 
+         size={28} 
+         className="text-orange-500 fill-orange-950/50 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] transition-transform duration-300 group-hover:scale-110" 
+         strokeWidth={2}
+       />
+       
+       {/* Central Energy Core (Zap) */}
+       <div className="absolute inset-0 flex items-center justify-center">
+          <Zap 
+            size={12} 
+            className="text-white drop-shadow-[0_0_5px_rgba(255,255,255,1)] animate-pulse" 
+            fill="currentColor" 
+          />
+       </div>
+    </div>
   </div>
 );
 
@@ -140,15 +154,15 @@ const WelcomeOverlay = ({ user, onComplete }: { user: UserProfile, onComplete: (
         </div>
         
         <h2 className="text-3xl font-bold text-white font-orbitron tracking-[0.2em] mb-2 animate-in slide-in-from-bottom-5 duration-700 delay-300 fill-mode-both">
-          IDENTITY CONFIRMED
+          SYSTEM INITIALIZED
         </h2>
         
         <div className="text-emerald-500 font-bold text-sm uppercase tracking-widest mb-8 flex items-center justify-center gap-2 animate-in slide-in-from-bottom-5 duration-700 delay-500 fill-mode-both">
-          <CheckCircle size={14} /> ACCESS GRANTED
+          <CheckCircle size={14} /> AUTO-LOGIN ACTIVE
         </div>
         
         <div className="bg-neutral-900/50 border border-neutral-800 p-8 rounded-lg min-w-[300px] animate-in slide-in-from-bottom-5 duration-700 delay-700 fill-mode-both">
-           <p className="text-neutral-500 text-xs uppercase tracking-widest mb-2">Welcome Back</p>
+           <p className="text-neutral-500 text-xs uppercase tracking-widest mb-2">Authenticated As</p>
            <h1 className="text-4xl text-white font-bold font-oxanium mb-2 text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
              {user.name}
            </h1>
@@ -161,20 +175,21 @@ const WelcomeOverlay = ({ user, onComplete }: { user: UserProfile, onComplete: (
   );
 };
 
+const DEFAULT_USER: UserProfile = {
+  name: 'System Commander',
+  role: 'ADMINISTRATOR',
+  level: 'LEVEL 5 (MAX)'
+};
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('DASHBOARD');
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [showWelcome, setShowWelcome] = useState(false);
+  // Initialize directly with the default user, bypassing login
+  const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USER);
+  const [showWelcome, setShowWelcome] = useState(true);
 
-  const handleLogin = (userData: UserProfile) => {
-    setCurrentUser(userData);
-    setShowWelcome(true);
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentView('DASHBOARD');
-    setShowWelcome(false);
+  const handleSystemReset = () => {
+    // Simulates a logout/reset by reloading the page
+    window.location.reload();
   };
 
   const renderContent = () => {
@@ -184,14 +199,11 @@ const App: React.FC = () => {
       case 'OSINT': return <Osint />;
       case 'NETWORK': return <NetworkSec />;
       case 'VULN_SCAN': return <VulnScan />;
+      case 'DDOS': return <DDoSAttack />;
       case 'ADMIN_PANEL': return <AdminPanel />;
       default: return <Dashboard />;
     }
   };
-
-  if (!currentUser) {
-    return <Login onLogin={handleLogin} />;
-  }
 
   return (
     <>
@@ -212,7 +224,7 @@ const App: React.FC = () => {
              
              <div className="leading-tight hidden sm:block">
                <h1 className="font-bold text-xl tracking-widest text-white font-orbitron uppercase flex items-center gap-2">
-                 C-FORCE <span className="text-red-600">AI</span>
+                 C-FORCE <span className="text-orange-500 drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]">AI</span>
                </h1>
              </div>
           </div>
@@ -248,6 +260,12 @@ const App: React.FC = () => {
               label="SCANS" 
               active={currentView === 'VULN_SCAN'} 
               onClick={() => setCurrentView('VULN_SCAN')} 
+            />
+            <NavItem 
+              icon={Zap} 
+              label="DDOS ATTACK" 
+              active={currentView === 'DDOS'} 
+              onClick={() => setCurrentView('DDOS')} 
             />
             
             {/* Admin Only Navigation */}
@@ -292,12 +310,12 @@ const App: React.FC = () => {
                  <User size={18} />
                </div>
 
-               {/* Logout Button */}
+               {/* Logout Button turned into System Reset */}
                <button 
-                 onClick={handleLogout}
+                 onClick={handleSystemReset}
                  className="absolute -bottom-10 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-900 text-white text-[10px] px-3 py-1 rounded flex items-center gap-1 border border-red-500 z-50"
                >
-                 <LogOut size={10} /> LOGOUT
+                 <RefreshCw size={10} /> RELOAD
                </button>
             </div>
           </div>

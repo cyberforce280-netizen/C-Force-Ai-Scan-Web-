@@ -11,22 +11,24 @@ export const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [search, setSearch] = useState('');
 
-  const loadUsers = () => {
-    setUsers(authService.getUsers());
+  // Fixed: handle the promise returned by authService.getUsers
+  const loadUsers = async () => {
+    const data = await authService.getUsers();
+    setUsers(data);
   };
 
   useEffect(() => {
     loadUsers();
   }, []);
 
-  const handleDelete = (username: string) => {
+  const handleDelete = async (username: string) => {
     if (username === 'admin') {
       alert("Cannot delete the root administrator.");
       return;
     }
     if (confirm(`Are you sure you want to revoke access for operative: ${username}?`)) {
-      authService.deleteUser(username);
-      loadUsers();
+      await authService.deleteUser(username);
+      await loadUsers();
     }
   };
 
